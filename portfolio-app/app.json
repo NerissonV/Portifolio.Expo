@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Portfolio App",
+    "owner": "nerisson-team",
     "slug": "portfolio-app",
     "version": "1.0.0",
     "description": "Aplicativo de portfólio pessoal desenvolvido com React Native, Expo e Back4App",
@@ -8,11 +9,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "portfolioapp",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#2563eb"
-    },
+    
     "updates": {
       "url": "https://u.expo.dev/YOUR_PROJECT_ID"
     },
