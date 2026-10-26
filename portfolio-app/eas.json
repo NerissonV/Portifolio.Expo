@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 14.2.0"
@@ -30,16 +31,5 @@
   },
   "submit": {
     "production": {}
-  },
-  "update": {
-    "development": {
-      "channel": "development"
-    },
-    "preview": {
-      "channel": "preview"
-    },
-    "production": {
-      "channel": "production"
-    }
   }
 }
