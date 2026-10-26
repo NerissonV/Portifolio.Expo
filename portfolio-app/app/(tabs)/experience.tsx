@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, View } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { StyleSheet, ScrollView, View, RefreshControl } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -15,12 +15,9 @@ export default function ExperienceScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const [experience, setExperience] = useState<Experience[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadExperience();
-  }, []);
-
-  const loadExperience = async () => {
+  const loadExperience = useCallback(async () => {
     try {
       const data = await getExperience();
       setExperience(data);
@@ -28,13 +25,31 @@ export default function ExperienceScreen() {
       console.error('Error loading experience:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadExperience();
+  }, [loadExperience]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadExperience();
+  }, [loadExperience]);
 
   const formatDate = (date: string) => {
     if (!date) return '';
+    const parts = date.split('-');
+    if (parts.length >= 2) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parts[2] ? parseInt(parts[2], 10) : 1;
+      const d = new Date(year, month, day);
+      return d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+    }
     const d = new Date(date);
-    return d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+    return isNaN(d.getTime()) ? date : d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
   };
 
   if (loading) {
@@ -43,12 +58,23 @@ export default function ExperienceScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Animatable.View animation="fadeIn" duration={1000}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        <Animatable.View animation="fadeIn" duration={800}>
           <View style={styles.header}>
             <ThemedText style={styles.headerTitle}>💼 Experiência Profissional</ThemedText>
             <ThemedText style={styles.headerSubtitle}>
-              Minha trajetória e conquistas profissionais
+              Minha trajetória e realizações no mercado
             </ThemedText>
           </View>
 
@@ -74,18 +100,19 @@ export default function ExperienceScreen() {
                     {index < experience.length - 1 && (
                       <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />
                     )}
-                    
-                    <Card style={styles.experienceCard}>
-                      {exp.current && (
-                        <View style={[styles.currentBadge, { backgroundColor: colors.success }]}>
-                          <ThemedText style={styles.currentBadgeText}>Atual</ThemedText>
-                        </View>
-                      )}
 
-                      <View style={styles.periodBadge}>
-                        <ThemedText style={[styles.periodText, { color: colors.primary }]}>
-                          {formatDate(exp.startDate)} - {exp.current ? 'Presente' : formatDate(exp.endDate)}
-                        </ThemedText>
+                    <Card style={styles.experienceCard}>
+                      <View style={styles.cardTopRow}>
+                        <View style={styles.periodBadge}>
+                          <ThemedText style={[styles.periodText, { color: colors.primary }]}>
+                            {formatDate(exp.startDate)} - {exp.current ? 'Presente' : formatDate(exp.endDate)}
+                          </ThemedText>
+                        </View>
+                        {exp.current && (
+                          <View style={[styles.currentBadge, { backgroundColor: colors.success }]}>
+                            <ThemedText style={styles.currentBadgeText}>Atual</ThemedText>
+                          </View>
+                        )}
                       </View>
 
                       <ThemedText style={styles.position}>{exp.position}</ThemedText>
@@ -124,6 +151,7 @@ export default function ExperienceScreen() {
               <ThemedText style={styles.skillCategoryTitle}>💻 Desenvolvimento</ThemedText>
               <View style={styles.skillTags}>
                 <SkillTag text="React Native" color={colors.primary} />
+                <SkillTag text="Expo" color={colors.primary} />
                 <SkillTag text="TypeScript" color={colors.primary} />
                 <SkillTag text="JavaScript" color={colors.primary} />
                 <SkillTag text="Node.js" color={colors.primary} />
@@ -131,20 +159,22 @@ export default function ExperienceScreen() {
             </View>
 
             <View style={styles.skillCategory}>
-              <ThemedText style={styles.skillCategoryTitle}>🎨 Frontend</ThemedText>
+              <ThemedText style={styles.skillCategoryTitle}>🎨 Frontend & Mobile</ThemedText>
               <View style={styles.skillTags}>
                 <SkillTag text="React" color={colors.secondary} />
-                <SkillTag text="CSS" color={colors.secondary} />
-                <SkillTag text="Responsive Design" color={colors.secondary} />
+                <SkillTag text="Expo Router" color={colors.secondary} />
+                <SkillTag text="Design Responsivo" color={colors.secondary} />
+                <SkillTag text="AsyncStorage" color={colors.secondary} />
               </View>
             </View>
 
             <View style={styles.skillCategory}>
-              <ThemedText style={styles.skillCategoryTitle}>🔧 Ferramentas</ThemedText>
+              <ThemedText style={styles.skillCategoryTitle}>🔧 Ferramentas & Backend</ThemedText>
               <View style={styles.skillTags}>
-                <SkillTag text="Git" color={colors.accent} />
+                <SkillTag text="Git & GitHub" color={colors.accent} />
+                <SkillTag text="Back4App / Parse" color={colors.accent} />
+                <SkillTag text="REST APIs" color={colors.accent} />
                 <SkillTag text="VS Code" color={colors.accent} />
-                <SkillTag text="Figma" color={colors.accent} />
               </View>
             </View>
           </Card>
@@ -166,18 +196,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 32,
+  },
   header: {
     padding: 24,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 8,
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 14,
-    opacity: 0.7,
+    opacity: 0.75,
     textAlign: 'center',
   },
   timeline: {
@@ -208,14 +242,16 @@ const styles = StyleSheet.create({
   experienceCard: {
     marginLeft: 8,
   },
+  cardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   currentBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    zIndex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   currentBadgeText: {
     fontSize: 11,
@@ -225,7 +261,6 @@ const styles = StyleSheet.create({
   },
   periodBadge: {
     alignSelf: 'flex-start',
-    marginBottom: 12,
   },
   periodText: {
     fontSize: 12,
@@ -233,14 +268,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   position: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   company: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   description: {
     fontSize: 14,
@@ -249,12 +284,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   techContainer: {
-    marginTop: 8,
+    marginTop: 4,
   },
   techLabel: {
     fontSize: 12,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 6,
     opacity: 0.7,
   },
   techTags: {
@@ -263,9 +298,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   techTag: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   techTagText: {
     fontSize: 11,
@@ -284,15 +319,15 @@ const styles = StyleSheet.create({
   },
   skillsCard: {
     marginHorizontal: 16,
-    marginBottom: 32,
+    marginBottom: 16,
   },
   skillCategory: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   skillCategoryTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   skillTags: {
     flexDirection: 'row',
@@ -301,8 +336,8 @@ const styles = StyleSheet.create({
   },
   skillTag: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 5,
+    borderRadius: 14,
     borderWidth: 1.5,
   },
   skillTagText: {

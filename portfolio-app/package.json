@@ -36,6 +36,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "check": "node scripts/checkSetup.js",
+    "typecheck": "tsc --noEmit",
     "build:development": "eas build --profile development",
     "build:preview": "eas build --profile preview",
     "build:production": "eas build --profile production",

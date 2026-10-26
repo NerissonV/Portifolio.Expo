@@ -30,7 +30,7 @@ export default function TabLayout() {
           title: 'Home',
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name="home" size={size} color={typeof color === 'string' ? color : colors.tint} />
           ),
         }}
       />
@@ -40,7 +40,7 @@ export default function TabLayout() {
           title: 'Sobre',
           tabBarLabel: 'Sobre',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="information-circle" size={size} color={color} />
+            <Ionicons name="information-circle" size={size} color={typeof color === 'string' ? color : colors.tint} />
           ),
         }}
       />
@@ -50,7 +50,7 @@ export default function TabLayout() {
           title: 'Educação',
           tabBarLabel: 'Educação',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="school" size={size} color={color} />
+            <Ionicons name="school" size={size} color={typeof color === 'string' ? color : colors.tint} />
           ),
         }}
       />
@@ -60,7 +60,7 @@ export default function TabLayout() {
           title: 'Experiência',
           tabBarLabel: 'Experiência',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="briefcase" size={size} color={color} />
+            <Ionicons name="briefcase" size={size} color={typeof color === 'string' ? color : colors.tint} />
           ),
         }}
       />
@@ -70,7 +70,7 @@ export default function TabLayout() {
           title: 'Projetos',
           tabBarLabel: 'Projetos',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="code-slash" size={size} color={color} />
+            <Ionicons name="code-slash" size={size} color={typeof color === 'string' ? color : colors.tint} />
           ),
         }}
       />

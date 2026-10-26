@@ -48,7 +48,10 @@ export default function AboutScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Animatable.View animation="fadeIn" duration={1000}>
           <View style={styles.header}>
             <ThemedText style={styles.headerTitle}>Sobre o App</ThemedText>
@@ -132,6 +135,9 @@ export default function AboutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 32,
   },
   header: {
     padding: 24,

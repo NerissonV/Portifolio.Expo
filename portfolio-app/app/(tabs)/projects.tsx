@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity, Linking } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { StyleSheet, ScrollView, View, TouchableOpacity, Linking, Image, RefreshControl } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -15,12 +15,9 @@ export default function ProjectsScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       const data = await getProjects();
       setProjects(data);
@@ -28,12 +25,28 @@ export default function ProjectsScreen() {
       console.error('Error loading projects:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, []);
 
-  const openLink = (url?: string) => {
-    if (url) {
-      Linking.openURL(url);
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadProjects();
+  }, [loadProjects]);
+
+  const openLink = async (url?: string) => {
+    if (!url) return;
+    try {
+      const formattedUrl = url.startsWith('http://') || url.startsWith('https://')
+        ? url
+        : `https://${url}`;
+      await Linking.openURL(formattedUrl);
+    } catch (error) {
+      console.error('Error opening URL:', error);
     }
   };
 
@@ -41,10 +54,24 @@ export default function ProjectsScreen() {
     return <LoadingScreen />;
   }
 
+  const featuredProjects = projects.filter(p => p.featured);
+  const otherProjects = projects.filter(p => !p.featured);
+
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Animatable.View animation="fadeIn" duration={1000}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        <Animatable.View animation="fadeIn" duration={800}>
           <View style={styles.header}>
             <ThemedText style={styles.headerTitle}>🚀 Projetos</ThemedText>
             <ThemedText style={styles.headerSubtitle}>
@@ -52,35 +79,36 @@ export default function ProjectsScreen() {
             </ThemedText>
           </View>
 
-          {projects.filter(p => p.featured).length > 0 && (
+          {featuredProjects.length > 0 && (
             <>
               <SectionTitle title="Projetos em Destaque" icon="⭐" />
-              {projects
-                .filter(p => p.featured)
-                .map((project, index) => (
-                  <ProjectCard
-                    key={project.objectId || index}
-                    project={project}
-                    index={index}
-                    colors={colors}
-                    onOpenLink={openLink}
-                  />
-                ))}
+              {featuredProjects.map((project, index) => (
+                <ProjectCard
+                  key={project.objectId || `featured-${index}`}
+                  project={project}
+                  index={index}
+                  colors={colors}
+                  onOpenLink={openLink}
+                />
+              ))}
             </>
           )}
 
-          <SectionTitle title="Todos os Projetos" icon="📁" />
+          <SectionTitle
+            title={featuredProjects.length > 0 ? "Outros Projetos" : "Todos os Projetos"}
+            icon="📁"
+          />
 
-          {projects.length === 0 ? (
+          {(featuredProjects.length > 0 ? otherProjects : projects).length === 0 ? (
             <Card style={styles.emptyCard}>
               <ThemedText style={styles.emptyText}>
-                Nenhum projeto cadastrado ainda.
+                Nenhum projeto adicional cadastrado ainda.
               </ThemedText>
             </Card>
           ) : (
-            projects.map((project, index) => (
+            (featuredProjects.length > 0 ? otherProjects : projects).map((project, index) => (
               <ProjectCard
-                key={project.objectId || index}
+                key={project.objectId || `project-${index}`}
                 project={project}
                 index={index}
                 colors={colors}
@@ -89,12 +117,17 @@ export default function ProjectsScreen() {
             ))
           )}
 
-          <Card style={[styles.githubCard, { backgroundColor: colors.primary }]}>
-            <ThemedText style={styles.githubTitle}>💻 Mais Projetos</ThemedText>
-            <ThemedText style={styles.githubText}>
-              Confira mais projetos no meu GitHub
-            </ThemedText>
-          </Card>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => openLink('https://github.com')}
+          >
+            <Card style={[styles.githubCard, { backgroundColor: colors.primary }]}>
+              <ThemedText style={styles.githubTitle}>💻 Mais Projetos no GitHub</ThemedText>
+              <ThemedText style={styles.githubText}>
+                Toque aqui para explorar repositórios e contribuições de código aberto
+              </ThemedText>
+            </Card>
+          </TouchableOpacity>
         </Animatable.View>
       </ScrollView>
     </ThemedView>
@@ -112,8 +145,8 @@ function ProjectCard({ project, index, colors, onOpenLink }: ProjectCardProps) {
   return (
     <Animatable.View
       animation="fadeInUp"
-      delay={index * 150}
-      duration={600}
+      delay={index * 120}
+      duration={500}
     >
       <Card style={styles.projectCard}>
         {project.featured && (
@@ -122,11 +155,13 @@ function ProjectCard({ project, index, colors, onOpenLink }: ProjectCardProps) {
           </View>
         )}
 
-        {project.imageUrl && (
-          <View style={[styles.projectImage, { backgroundColor: colors.border }]}>
-            <ThemedText style={styles.projectImagePlaceholder}>🖼️</ThemedText>
-          </View>
-        )}
+        {project.imageUrl ? (
+          <Image
+            source={{ uri: project.imageUrl }}
+            style={styles.projectImage}
+            resizeMode="cover"
+          />
+        ) : null}
 
         <ThemedText style={styles.projectName}>{project.name}</ThemedText>
         <ThemedText style={styles.projectDescription}>{project.description}</ThemedText>
@@ -151,6 +186,7 @@ function ProjectCard({ project, index, colors, onOpenLink }: ProjectCardProps) {
             <TouchableOpacity
               style={[styles.linkButton, { backgroundColor: colors.primary }]}
               onPress={() => onOpenLink(project.githubUrl)}
+              activeOpacity={0.8}
             >
               <ThemedText style={styles.linkButtonText}>GitHub</ThemedText>
             </TouchableOpacity>
@@ -159,6 +195,7 @@ function ProjectCard({ project, index, colors, onOpenLink }: ProjectCardProps) {
             <TouchableOpacity
               style={[styles.linkButton, { backgroundColor: colors.success }]}
               onPress={() => onOpenLink(project.liveUrl)}
+              activeOpacity={0.8}
             >
               <ThemedText style={styles.linkButtonText}>Ver Projeto</ThemedText>
             </TouchableOpacity>
@@ -173,18 +210,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 32,
+  },
   header: {
     padding: 24,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 8,
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 14,
-    opacity: 0.7,
+    opacity: 0.75,
     textAlign: 'center',
   },
   projectCard: {
@@ -193,11 +234,11 @@ const styles = StyleSheet.create({
   },
   featuredBadge: {
     position: 'absolute',
-    top: 16,
-    right: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    top: 14,
+    right: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
     zIndex: 1,
   },
   featuredBadgeText: {
@@ -207,28 +248,23 @@ const styles = StyleSheet.create({
   },
   projectImage: {
     width: '100%',
-    height: 150,
+    height: 160,
     borderRadius: 8,
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  projectImagePlaceholder: {
-    fontSize: 48,
+    marginBottom: 14,
   },
   projectName: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   projectDescription: {
     fontSize: 14,
     lineHeight: 22,
-    opacity: 0.8,
+    opacity: 0.85,
     marginBottom: 12,
   },
   techContainer: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   techTags: {
     flexDirection: 'row',
@@ -236,9 +272,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   techTag: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   techTagText: {
     fontSize: 11,
@@ -272,18 +308,20 @@ const styles = StyleSheet.create({
   },
   githubCard: {
     marginHorizontal: 16,
-    marginBottom: 32,
+    marginBottom: 16,
     alignItems: 'center',
+    paddingVertical: 18,
   },
   githubTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 4,
   },
   githubText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#fff',
     opacity: 0.9,
+    textAlign: 'center',
   },
 });

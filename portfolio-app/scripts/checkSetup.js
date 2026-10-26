@@ -9,40 +9,57 @@ const path = require('path');
 
 console.log('🔍 Verificando configuração do projeto...\n');
 
-let hasErrors = false;
+let hasBlockingErrors = false;
 
-// Verificar se o arquivo de configuração existe
-console.log('1️⃣ Verificando arquivo de serviço Back4App...');
-const back4appPath = path.join(__dirname, '../services/back4app.ts');
-if (fs.existsSync(back4appPath)) {
-  const content = fs.readFileSync(back4appPath, 'utf8');
-  
-  if (content.includes('YOUR_APP_ID') || content.includes('YOUR_REST_API_KEY')) {
-    console.log('   ❌ ERRO: Credenciais do Back4App não configuradas!');
-    console.log('   📝 Edite o arquivo services/back4app.ts com suas credenciais');
-    hasErrors = true;
-  } else {
-    console.log('   ✅ Arquivo de serviço configurado');
-  }
-} else {
-  console.log('   ❌ ERRO: Arquivo back4app.ts não encontrado!');
-  hasErrors = true;
-}
-
-// Verificar se as dependências estão instaladas
-console.log('\n2️⃣ Verificando dependências...');
-const packagePath = path.join(__dirname, '../package.json');
+// 1. Verificar dependências
+console.log('1️⃣ Verificando dependências...');
 const nodeModulesPath = path.join(__dirname, '../node_modules');
 
 if (!fs.existsSync(nodeModulesPath)) {
   console.log('   ❌ ERRO: Dependências não instaladas!');
   console.log('   📝 Execute: npm install');
-  hasErrors = true;
+  hasBlockingErrors = true;
 } else {
   console.log('   ✅ Dependências instaladas');
 }
 
-// Verificar telas principais
+// 2. Verificar arquivo de serviço Back4App e credenciais
+console.log('\n2️⃣ Verificando serviço Back4App e credenciais...');
+const back4appPath = path.join(__dirname, '../services/back4app.ts');
+const envPath = path.join(__dirname, '../.env');
+
+let credentialsConfigured = false;
+
+if (fs.existsSync(back4appPath)) {
+  const content = fs.readFileSync(back4appPath, 'utf8');
+  if (!content.includes("'YOUR_APP_ID'") && !content.includes('"YOUR_APP_ID"')) {
+    credentialsConfigured = true;
+  }
+} else {
+  console.log('   ❌ ERRO: Arquivo services/back4app.ts não encontrado!');
+  hasBlockingErrors = true;
+}
+
+if (!credentialsConfigured && fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  if (
+    envContent.includes('EXPO_PUBLIC_BACK4APP_APP_ID=') &&
+    !envContent.includes('seu_app_id_aqui') &&
+    !envContent.includes('your_app_id_here')
+  ) {
+    credentialsConfigured = true;
+  }
+}
+
+if (credentialsConfigured) {
+  console.log('   ✅ Credenciais do Back4App configuradas!');
+} else {
+  console.log('   ⚠️  Credenciais do Back4App não detectadas no .env ou back4app.ts.');
+  console.log('   ℹ️  O app funcionará normalmente no Modo Demonstração (com dados offline e cache local).');
+  console.log('   📝 Para sincronizar com a nuvem, crie um arquivo .env com EXPO_PUBLIC_BACK4APP_APP_ID e EXPO_PUBLIC_BACK4APP_REST_API_KEY');
+}
+
+// 3. Verificar telas principais
 console.log('\n3️⃣ Verificando telas do app...');
 const screens = ['index.tsx', 'about.tsx', 'education.tsx', 'experience.tsx', 'projects.tsx'];
 const screensPath = path.join(__dirname, '../app/(tabs)');
@@ -52,7 +69,7 @@ screens.forEach(screen => {
   if (!fs.existsSync(path.join(screensPath, screen))) {
     console.log(`   ❌ Faltando: ${screen}`);
     allScreensExist = false;
-    hasErrors = true;
+    hasBlockingErrors = true;
   }
 });
 
@@ -60,7 +77,7 @@ if (allScreensExist) {
   console.log('   ✅ Todas as 5 telas criadas');
 }
 
-// Verificar componentes
+// 4. Verificar componentes
 console.log('\n4️⃣ Verificando componentes...');
 const components = ['Card.tsx', 'LoadingScreen.tsx', 'SectionTitle.tsx', 'ThemedText.tsx', 'ThemedView.tsx'];
 const componentsPath = path.join(__dirname, '../components');
@@ -70,7 +87,7 @@ components.forEach(component => {
   if (!fs.existsSync(path.join(componentsPath, component))) {
     console.log(`   ❌ Faltando: ${component}`);
     allComponentsExist = false;
-    hasErrors = true;
+    hasBlockingErrors = true;
   }
 });
 
@@ -80,15 +97,15 @@ if (allComponentsExist) {
 
 // Resumo
 console.log('\n' + '='.repeat(50));
-if (hasErrors) {
-  console.log('\n❌ ATENÇÃO: Alguns problemas foram encontrados!');
+if (hasBlockingErrors) {
+  console.log('\n❌ ATENÇÃO: Foram encontrados problemas críticos!');
   console.log('📝 Corrija os erros acima antes de rodar o app.\n');
   process.exit(1);
 } else {
-  console.log('\n✅ Tudo pronto! O projeto está configurado corretamente.');
-  console.log('\n📱 Próximos passos:');
-  console.log('   1. Configure suas credenciais do Back4App');
-  console.log('   2. Crie as classes no Back4App (veja INSTRUCOES_FINAIS.md)');
-  console.log('   3. Execute: npm start');
-  console.log('   4. Escaneie o QR Code com Expo Go\n');
+  console.log('\n✅ Tudo pronto! O projeto está saudável e pronto para rodar.');
+  console.log('\n📱 Comandos úteis:');
+  console.log('   - npm start       -> Inicia o servidor Metro (Expo)');
+  console.log('   - npm run web     -> Inicia no navegador');
+  console.log('   - npm run android -> Inicia no emulador/dispositivo Android');
+  console.log('   - npm run typecheck -> Valida tipos TypeScript\n');
 }
