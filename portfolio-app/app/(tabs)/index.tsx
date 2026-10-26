@@ -81,11 +81,11 @@ export default function HomeScreen() {
               {getInitials(profile?.name)}
             </ThemedText>
           </View>
-          <ThemedText style={styles.name}>{profile?.name || 'Seu Nome'}</ThemedText>
+          <ThemedText style={styles.name}> Nerisso valdomiro da Silva </ThemedText>
           <ThemedText style={[styles.title, { color: colors.primary }]}>
             {profile?.title || 'Desenvolvedor'}
           </ThemedText>
-          <ThemedText style={styles.location}>📍 {profile?.location || 'Localização'}</ThemedText>
+          <ThemedText style={styles.location}>📍 Pernambuco </ThemedText>
         </Animatable.View>
 
         {!isConfigured() && (
